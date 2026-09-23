@@ -2,10 +2,13 @@ package com.slabbed.compat.sable;
 
 import com.slabbed.util.SlabbedOffsetRaycast;
 import dev.ryanhcode.sable.companion.SableCompanion;
+import dev.ryanhcode.sable.mixinterface.clip_overwrite.ClipContextExtension;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 
 /**
  * Where a pick hit on a Sable sub-level really is, answered by Sable's own companion API.
@@ -41,5 +44,26 @@ public final class SableHitGeometry {
     /** Squared distance from {@code eye} to {@code pos}, with {@code pos} taken out of any sub-level. */
     public static double distanceSq(Level level, Vec3 eye, Vec3 pos) {
         return SableCompanion.INSTANCE.distanceSquaredWithSubLevels(level, eye, pos);
+    }
+
+    /**
+     * Sable's clip of {@code context}'s ray against its sub-levels alone, keeping the original
+     * clip's sub-level filters. For a Slabbed re-march, which sees only the world: whatever it
+     * returns must still compete with a sub-level the same ray crosses.
+     *
+     * <p>Clips with {@code COLLIDER} and {@code Fluid.NONE}, the modes of every Slabbed seam that
+     * re-marches ({@link com.slabbed.util.SlabbedOffsetColliderClip}); {@link ClipContext} does not
+     * expose the original's modes.
+     */
+    public static BlockHitResult clipSubLevels(Level level, ClipContext context, CollisionContext shapeContext) {
+        ClipContext subLevelsOnly = new ClipContext(context.getFrom(), context.getTo(),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shapeContext);
+        ClipContextExtension original = (ClipContextExtension) context;
+        ClipContextExtension copy = (ClipContextExtension) subLevelsOnly;
+        copy.sable$setIgnoredSubLevel(original.sable$getIgnoredSubLevel());
+        copy.sable$setSubLevelIgnoring(original.sable$getSubLevelIgnoring());
+        copy.sable$setDoNotProject(original.sable$doNotProject());
+        copy.sable$setIgnoreMainLevel(true);
+        return level.clip(subLevelsOnly);
     }
 }

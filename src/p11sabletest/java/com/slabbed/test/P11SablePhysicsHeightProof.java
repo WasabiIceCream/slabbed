@@ -5,6 +5,7 @@ import com.slabbed.compat.sable.SableHitGeometry;
 import com.slabbed.compat.sable.SablePhysicsHeight;
 import com.slabbed.compat.sable.SablePlacementRefresh;
 import com.slabbed.util.SlabSupport;
+import com.slabbed.util.SlabbedOffsetColliderClip;
 import com.slabbed.util.SlabbedOffsetRaycast;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
@@ -50,6 +51,9 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * the object has settled. With the height bridge the lowered pad holds the object half a block lower
  * than the flush pad, and the refreshed pad lets its resting object down by the same half block.
  * The RED lane runs the same world with the bridge switched off and must see both pads alike.
+ *
+ * <p>Once the objects have settled, rays through them check that Slabbed's crosshair pick and its
+ * arrow and sight clip corrections all stop at a Sable object rather than passing through it.
  */
 public final class P11SablePhysicsHeightProof {
     private static final String EXPECT_RED_PROPERTY = "slabbed.p11.sable.expect_red";
@@ -66,6 +70,9 @@ public final class P11SablePhysicsHeightProof {
     private static ServerSubLevel controlObject;
     private static ServerSubLevel loweredObject;
     private static ServerSubLevel refreshObject;
+    private static BlockPos clipFixture;
+    private static BlockPos compoundBase;
+    private static ServerSubLevel compoundObject;
     private static double refreshBefore = Double.NaN;
     private static boolean done;
 
@@ -123,11 +130,29 @@ public final class P11SablePhysicsHeightProof {
                 }
             }
 
+            // A lowered stone on the -x side of the control object, for the collider-clip check.
+            BlockPos clipColumn = controlCenter.offset(-3, 0, 0);
+            clipFixture = clipColumn.above(3);
+            level.setBlock(clipColumn, Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+            level.setBlock(clipColumn.above(), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+            buildLoweredCell(level, player, clipColumn.above(2));
+            requireDy(level, clipFixture, -0.5d, "clip_fixture_lowered");
+
+            // An object that is itself a slab carrying a lowered stone.
+            compoundBase = new BlockPos(spawn.getX(), ground, spawn.getZ() + 10);
+            buildLoweredCell(level, player, compoundBase);
+            requireDy(level, compoundBase.above(), -0.5d, "compound_stone_lowered");
+
             measureSectionCost(level, container, spawn);
 
             controlObject = drop(level, controlCenter.above(4));
             loweredObject = drop(level, loweredCenter.above(4));
             refreshObject = drop(level, refreshCenter.above(4));
+            compoundObject = SubLevelAssemblyHelper.assembleBlocks(level, compoundBase,
+                    List.of(compoundBase, compoundBase.above()),
+                    new BoundingBox3i(compoundBase.getX(), compoundBase.getY(), compoundBase.getZ(),
+                            compoundBase.getX(), compoundBase.getY() + 1, compoundBase.getZ()));
+            require(compoundObject != null && !compoundObject.isRemoved(), "assembled_compound");
         } catch (Throwable t) {
             fail(event.getServer(), t);
         }
@@ -166,6 +191,7 @@ public final class P11SablePhysicsHeightProof {
                 require(near(lowered - top, expectedLowered), "lowered_pad_resting_height " + numbers);
                 require(near(refreshAfter - top, expectedLowered), "refreshed_pad_resting_height " + numbers);
                 numbers += " " + pickCheck(server.overworld());
+                numbers += " " + colliderClipCheck(server.overworld());
                 writeReceipt(expectRed ? "p11-sable-red.ok" : "p11-sable.ok", numbers + "\n");
                 done = true;
                 server.halt(false);
@@ -218,6 +244,96 @@ public final class P11SablePhysicsHeightProof {
         require(SableHitGeometry.composePick(level, besideEye, besideSable, besideOffset) == besideOffset,
                 "pick_beside_world_hit_keeps_the_slabbed_hit");
         return result + " beside=slabbed";
+    }
+
+    /**
+     * The arrow and sight clip corrections on rays through Sable objects. Sable's clip reports a
+     * sub-level hit in its plot grid; the corrections must never let the ray pass through the
+     * object. Ray A crosses the control object, then a lowered stone the owner-window search
+     * finds. Ray B crosses an object that is itself a slab carrying a lowered stone, whose plot-grid
+     * cell is dy-shifted. Ray C crosses the lowered pad's vacated band, then the object resting on
+     * that pad — which the band re-march alone, seeing only the world, cannot find.
+     */
+    private static String colliderClipCheck(ServerLevel level) {
+        Vec3 center = position(controlObject);
+        Vec3 aFrom = center.add(3.5d, 0.25d, 0.0d);
+        Vec3 aTo = center.add(-6.5d, 0.25d, 0.0d);
+        ClipContext a = collider(aFrom, aTo);
+        BlockHitResult aVanilla = level.clip(a);
+        require(SableHitGeometry.isSubLevelHit(level, aVanilla), "clip_a_sable_reports_the_object "
+                + describe(level, aFrom, aVanilla));
+        BlockHitResult aWithoutObject = SlabbedOffsetColliderClip.clip(level, a, null,
+                BlockHitResult.miss(aTo, Direction.EAST, BlockPos.containing(aTo)));
+        require(aWithoutObject.getType() == HitResult.Type.BLOCK && aWithoutObject.getBlockPos().equals(clipFixture),
+                "clip_a_owner_window_finds_the_lowered_stone " + describe(level, aFrom, aWithoutObject));
+        BlockHitResult aArrow = SlabbedOffsetColliderClip.clip(level, a, null, aVanilla);
+        BlockHitResult aSight = SlabbedOffsetColliderClip.clipForOcclusion(level, a, null, aVanilla);
+        require(aArrow == aVanilla, "clip_a_arrow_stops_at_the_object " + describe(level, aFrom, aArrow));
+        require(aSight == aVanilla, "clip_a_sight_stops_at_the_object " + describe(level, aFrom, aSight));
+
+        Vec3 compound = position(compoundObject);
+        Vec3 bFrom = compound.add(0.0d, 0.0d, -3.5d);
+        ClipContext b = collider(bFrom, compound.add(0.0d, 0.0d, 6.5d));
+        BlockHitResult bVanilla = level.clip(b);
+        require(SableHitGeometry.isSubLevelHit(level, bVanilla)
+                        && Math.abs(SlabSupport.getYOffset(level, bVanilla.getBlockPos(),
+                                level.getBlockState(bVanilla.getBlockPos()))) > 1.0e-6d,
+                "clip_b_sable_reports_a_shifted_object_cell " + describe(level, bFrom, bVanilla));
+        BlockHitResult bArrow = SlabbedOffsetColliderClip.clip(level, b, null, bVanilla);
+        BlockHitResult bSight = SlabbedOffsetColliderClip.clipForOcclusion(level, b, null, bVanilla);
+        require(bArrow == bVanilla, "clip_b_arrow_stops_at_the_object " + describe(level, bFrom, bArrow));
+        require(bSight == bVanilla, "clip_b_sight_stops_at_the_object " + describe(level, bFrom, bSight));
+
+        Vec3 resting = position(loweredObject);
+        double bandY = ground + 1.75d;
+        Vec3 cFrom = new Vec3(resting.x + 3.5d, bandY, resting.z);
+        ClipContext c = collider(cFrom, new Vec3(resting.x - 6.5d, bandY, resting.z));
+        BlockHitResult cVanilla = level.clip(c);
+        require(cVanilla.getType() == HitResult.Type.BLOCK && !SableHitGeometry.isSubLevelHit(level, cVanilla)
+                        && Math.abs(SlabSupport.getYOffset(level, cVanilla.getBlockPos(),
+                                level.getBlockState(cVanilla.getBlockPos()))) > 1.0e-6d,
+                "clip_c_sable_reports_the_vacated_band " + describe(level, cFrom, cVanilla));
+        BlockHitResult cArrow = SlabbedOffsetColliderClip.clip(level, c, null, cVanilla);
+        BlockHitResult cSight = SlabbedOffsetColliderClip.clipForOcclusion(level, c, null, cVanilla);
+        String numbers = "clip: a=" + describe(level, aFrom, aArrow) + " b=" + describe(level, bFrom, bArrow)
+                + " c=" + describe(level, cFrom, cArrow);
+        System.out.println("P11_SABLE_CLIP | " + (expectRed ? "RED " : "") + numbers);
+        // Without the bridge the object rests half a block higher, above this ray.
+        if (expectRed) {
+            require(cArrow.getType() == HitResult.Type.MISS, "clip_c_red_arrow_clears_the_band " + numbers);
+            require(cSight.getType() == HitResult.Type.MISS, "clip_c_red_sight_clears_the_band " + numbers);
+        } else {
+            require(isObjectHitAt(level, cFrom, cArrow, 3.0d), "clip_c_arrow_stops_at_the_object " + numbers);
+            require(isObjectHitAt(level, cFrom, cSight, 3.0d), "clip_c_sight_stops_at_the_object "
+                    + describe(level, cFrom, cSight));
+        }
+        return numbers;
+    }
+
+    private static ClipContext collider(Vec3 from, Vec3 to) {
+        return new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, CollisionContext.empty());
+    }
+
+    private static Vec3 position(ServerSubLevel object) {
+        return new Vec3(object.logicalPose().position().x(), object.logicalPose().position().y(),
+                object.logicalPose().position().z());
+    }
+
+    private static boolean isObjectHitAt(ServerLevel level, Vec3 from, BlockHitResult hit, double distance) {
+        return SableHitGeometry.isSubLevelHit(level, hit)
+                && near(Math.sqrt(SableHitGeometry.distanceSq(level, from, hit.getLocation())), distance);
+    }
+
+    private static String describe(ServerLevel level, Vec3 from, BlockHitResult hit) {
+        if (hit.getType() == HitResult.Type.MISS) {
+            return "MISS";
+        }
+        BlockPos pos = hit.getBlockPos();
+        return String.format(Locale.ROOT, "%s{object=%s,dy=%.2f,distance=%.2f}",
+                level.getBlockState(pos).getBlock().getName().getString().replace(' ', '_'),
+                SableHitGeometry.isSubLevelHit(level, hit),
+                SlabSupport.getYOffset(level, pos, level.getBlockState(pos)),
+                Math.sqrt(SableHitGeometry.distanceSq(level, from, hit.getLocation())));
     }
 
     /**

@@ -1,17 +1,20 @@
 package com.slabbed.util;
 
+import com.slabbed.compat.sable.SableHitGeometry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.neoforged.fml.ModList;
 
 /**
  * Offset-aware block collision for arrows only (maintainer ruling, 2026-08-28).
@@ -41,6 +44,12 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * {@code BlockHitResult}'s position to decide what it stuck into. A hit attributed to the wrong
  * cell would be a new wrong answer, not a fix.
  *
+ * <p><b>Sable sub-levels.</b> With Sable loaded, {@code Level.clip} also reports hits on its
+ * sub-levels, positioned in Sable's plot grid rather than on the world ray. Such a hit competes
+ * with a world candidate by Sable's distance, is never band-cleared, and a band re-march — which
+ * sees only the world — is followed by Sable's clip of its sub-levels ({@link SableHitGeometry}),
+ * so none of the three corrections lets a ray pass through a Sable object.
+ *
  * <p><b>Known, accepted limitation.</b> A ray that never visits the owner's own cell at all — one
  * that stays entirely inside the hang band, or one that starts inside it — still misses. That is
  * a strict improvement over today (today it misses always), never a regression, and it is the
@@ -66,6 +75,9 @@ public final class SlabbedOffsetColliderClip {
             !"false".equalsIgnoreCase(System.getProperty("slabbed.sightOffsetClip", "true"));
 
     private static final double EPS = 1.0e-6d;
+
+    private static final String SABLE_MOD_ID = "sable";
+    private static volatile Boolean sableLoaded;
 
     private SlabbedOffsetColliderClip() {
     }
@@ -110,12 +122,18 @@ public final class SlabbedOffsetColliderClip {
             if (slabbed$isUnsafeAsyncShapeContext(world)) {
                 return vanillaHit;
             }
+            // A Sable sub-level hit is settled like any hit on unshifted geometry: its position is
+            // in Sable's plot grid, where the world band re-march has nothing to clear.
+            Level sableLevel = sableLevel(world);
+            if (sableLevel != null && SableHitGeometry.isSubLevelHit(sableLevel, vanillaHit)) {
+                return vanillaHit;
+            }
             if (!isDyShiftedCell(world, vanillaHit.getBlockPos())) {
                 return vanillaHit;
             }
             CollisionContext shapeContext =
                     viewer != null ? CollisionContext.of(viewer) : CollisionContext.empty();
-            BlockHitResult cleared = bandAwareVanillaClip(world, context, shapeContext);
+            BlockHitResult cleared = clearVacatedBand(world, sableLevel, context, shapeContext);
             if (cleared.getType() != HitResult.Type.MISS) {
                 return cleared;
             }
@@ -148,14 +166,17 @@ public final class SlabbedOffsetColliderClip {
         }
 
         CollisionContext shapeContext = shooter != null ? CollisionContext.of(shooter) : CollisionContext.empty();
+        Level sableLevel = sableLevel(world);
         // Band clearing (maintainer ruling, 2026-08-31): a vanilla hit that resolved against a
         // dy-shifted cell may sit in that cell's VACATED band — space its un-lowered shape claims
         // but the drawn body has left. Re-march with the drawn shape substituted for shifted
         // cells; misses and hits on unshifted geometry pass through untouched, so clearing can
-        // never make a plain block permeable.
+        // never make a plain block permeable. A Sable sub-level hit is never re-marched: its cell
+        // is in Sable's plot grid, not on the world ray.
         if (vanillaHit.getType() == HitResult.Type.BLOCK
+                && !(sableLevel != null && SableHitGeometry.isSubLevelHit(sableLevel, vanillaHit))
                 && isDyShiftedCell(world, vanillaHit.getBlockPos())) {
-            vanillaHit = bandAwareVanillaClip(world, context, shapeContext);
+            vanillaHit = clearVacatedBand(world, sableLevel, context, shapeContext);
         }
         OwnerWindowCollector collector = new OwnerWindowCollector(world, from, to, shapeContext);
         BlockGetter.traverseBlocks(
@@ -172,7 +193,54 @@ public final class SlabbedOffsetColliderClip {
         if (candidate == null) {
             return vanillaHit;
         }
+        // A sub-level hit's position is in Sable's plot grid; only Sable's distance compares it
+        // with a world candidate. Measured plainly it is millions of blocks away and always loses.
+        if (sableLevel != null && SableHitGeometry.isSubLevelHit(sableLevel, vanillaHit)) {
+            return (BlockHitResult) SableHitGeometry.composePick(sableLevel, from, vanillaHit, candidate);
+        }
         return (BlockHitResult) SlabbedOffsetRaycast.selectNearestOwnedHit(from, vanillaHit, candidate);
+    }
+
+    /**
+     * The band-aware re-march, then — when Sable is loaded — Sable's clip of its sub-levels along
+     * the same ray. The re-march sees only the world, so a sub-level behind a cleared band would
+     * otherwise be passed through; the two compete by Sable's distance.
+     */
+    private static BlockHitResult clearVacatedBand(
+            BlockGetter world, Level sableLevel, ClipContext context, CollisionContext shapeContext
+    ) {
+        BlockHitResult cleared = bandAwareVanillaClip(world, context, shapeContext);
+        if (sableLevel == null) {
+            return cleared;
+        }
+        BlockHitResult subLevelHit = SableHitGeometry.clipSubLevels(sableLevel, context, shapeContext);
+        return (BlockHitResult) SableHitGeometry.composePick(sableLevel, context.getFrom(), subLevelHit, cleared);
+    }
+
+    /**
+     * The world as a {@link Level} when Sable is loaded, else null. Every
+     * {@link SableHitGeometry} call is behind this, so that class — and Sable's — only loads
+     * with Sable present.
+     */
+    private static Level sableLevel(BlockGetter world) {
+        return world instanceof Level level && isSableLoaded() ? level : null;
+    }
+
+    /**
+     * Lazily latched, as TerrainSlabsCompat is: an answer taken before the mod list exists is
+     * never cached.
+     */
+    private static boolean isSableLoaded() {
+        Boolean latched = sableLoaded;
+        if (latched == null) {
+            ModList modList = ModList.get();
+            if (modList == null) {
+                return false;
+            }
+            latched = modList.isLoaded(SABLE_MOD_ID);
+            sableLoaded = latched;
+        }
+        return latched;
     }
 
     private static boolean isDyShiftedCell(BlockGetter world, BlockPos pos) {
