@@ -1,9 +1,11 @@
 package com.slabbed.test;
 
 import com.slabbed.anchor.SlabPlacementHeightAttachment;
+import com.slabbed.compat.sable.SableHitGeometry;
 import com.slabbed.compat.sable.SablePhysicsHeight;
 import com.slabbed.compat.sable.SablePlacementRefresh;
 import com.slabbed.util.SlabSupport;
+import com.slabbed.util.SlabbedOffsetRaycast;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
@@ -25,13 +27,16 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
@@ -111,6 +116,13 @@ public final class P11SablePhysicsHeightProof {
             requireDy(level, loweredCenter.above(), -0.5d, "lowered_pad_lowered");
             requireDy(level, refreshCenter.above(), 0.0d, "refresh_pad_starts_flush");
 
+            // A wall behind the control object, for the pick check once the object has settled.
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = 2; dy <= 4; dy++) {
+                    level.setBlock(controlCenter.offset(dx, dy, 4), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+                }
+            }
+
             measureSectionCost(level, container, spawn);
 
             controlObject = drop(level, controlCenter.above(4));
@@ -153,6 +165,7 @@ public final class P11SablePhysicsHeightProof {
                 double expectedLowered = expectRed ? 0.5d : 0.0d;
                 require(near(lowered - top, expectedLowered), "lowered_pad_resting_height " + numbers);
                 require(near(refreshAfter - top, expectedLowered), "refreshed_pad_resting_height " + numbers);
+                numbers += " " + pickCheck(server.overworld());
                 writeReceipt(expectRed ? "p11-sable-red.ok" : "p11-sable.ok", numbers + "\n");
                 done = true;
                 server.halt(false);
@@ -160,6 +173,51 @@ public final class P11SablePhysicsHeightProof {
         } catch (Throwable t) {
             fail(server, t);
         }
+    }
+
+    /**
+     * A ray through the settled control object into the wall behind it. Sable's own clip reports
+     * the object, at the position it is stored in Sable's plot grid; Slabbed's offset raycast sees
+     * only the world and reports the wall. The composed pick must choose the object, which it does
+     * only when the object's hit is measured with Sable's own distance. A second ray beside the
+     * object reaches the wall through Sable's clip as a world hit, which must never displace the
+     * Slabbed hit.
+     */
+    private static String pickCheck(ServerLevel level) {
+        Vec3 center = new Vec3(controlObject.logicalPose().position().x(),
+                controlObject.logicalPose().position().y(), controlObject.logicalPose().position().z());
+        Vec3 eye = center.add(0.0d, 0.0d, -3.5d);
+        Vec3 end = center.add(0.0d, 0.0d, 6.5d);
+        BlockHitResult offset = SlabbedOffsetRaycast.raycast(level, eye, end, CollisionContext.empty());
+        require(offset.getType() == HitResult.Type.BLOCK
+                        && offset.getBlockPos().getZ() == controlCenter.getZ() + 4,
+                "pick_offset_raycast_sees_the_wall " + offset.getBlockPos().toShortString());
+        BlockHitResult external = level.clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE,
+                ClipContext.Fluid.NONE, CollisionContext.empty()));
+        require(SableHitGeometry.isSubLevelHit(level, external),
+                "pick_sable_clip_reports_the_object " + external.getType() + " " + external.getBlockPos().toShortString());
+        HitResult composed = SableHitGeometry.composePick(level, eye, external, offset);
+        HitResult plain = SlabbedOffsetRaycast.selectNearestOwnedHit(eye, external, offset);
+        String detail = String.format(Locale.ROOT, "pick: sableDistance=%.2f plainDistance=%.1f wallDistance=%.2f",
+                Math.sqrt(SableHitGeometry.distanceSq(level, eye, external.getLocation())),
+                Math.sqrt(external.getLocation().distanceToSqr(eye)),
+                Math.sqrt(offset.getLocation().distanceToSqr(eye)));
+        String result = detail + " composed=" + (composed == external ? "object" : "wall")
+                + " plain=" + (plain == external ? "object" : "wall");
+        System.out.println("P11_SABLE_PICK | " + result);
+        require(composed == external, "pick_composed_chooses_the_object " + result);
+
+        Vec3 besideEye = eye.add(1.0d, 0.0d, 0.0d);
+        Vec3 besideEnd = end.add(1.0d, 0.0d, 0.0d);
+        BlockHitResult besideOffset = SlabbedOffsetRaycast.raycast(level, besideEye, besideEnd, CollisionContext.empty());
+        BlockHitResult besideSable = level.clip(new ClipContext(besideEye, besideEnd, ClipContext.Block.OUTLINE,
+                ClipContext.Fluid.NONE, CollisionContext.empty()));
+        require(besideSable.getType() == HitResult.Type.BLOCK && !SableHitGeometry.isSubLevelHit(level, besideSable),
+                "pick_beside_sable_clip_reports_the_world " + besideSable.getType() + " "
+                        + besideSable.getBlockPos().toShortString());
+        require(SableHitGeometry.composePick(level, besideEye, besideSable, besideOffset) == besideOffset,
+                "pick_beside_world_hit_keeps_the_slabbed_hit");
+        return result + " beside=slabbed";
     }
 
     /**

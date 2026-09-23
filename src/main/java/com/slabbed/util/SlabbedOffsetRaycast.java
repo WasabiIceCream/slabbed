@@ -11,6 +11,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.level.BlockGetter;
+import java.util.function.ToDoubleFunction;
 
 /**
  * Offset-aware, nearest-hit block raycast — the single ownership rule for Slabbed
@@ -107,6 +108,22 @@ public final class SlabbedOffsetRaycast {
             HitResult externalHit,
             BlockHitResult slabbedHit
     ) {
+        return selectNearestOwnedHit(eye, externalHit, slabbedHit, pos -> pos.distanceToSqr(eye));
+    }
+
+    /**
+     * As {@link #selectNearestOwnedHit(Vec3, HitResult, BlockHitResult)}, with the external hit
+     * measured by its owner: {@code externalDistanceSq} maps the external hit's location to its
+     * squared distance from {@code eye}, for an owner that reports hits in its own coordinate space
+     * (Sable reports sub-level hits where the sub-level is stored, not where it is drawn). The
+     * Slabbed hit is always in world space and is measured directly.
+     */
+    public static HitResult selectNearestOwnedHit(
+            Vec3 eye,
+            HitResult externalHit,
+            BlockHitResult slabbedHit,
+            ToDoubleFunction<Vec3> externalDistanceSq
+    ) {
         if (externalHit == null || externalHit.getType() == HitResult.Type.MISS) {
             return slabbedHit;
         }
@@ -114,7 +131,7 @@ public final class SlabbedOffsetRaycast {
             return externalHit;
         }
 
-        double externalDistance = externalHit.getLocation().distanceToSqr(eye);
+        double externalDistance = externalDistanceSq.applyAsDouble(externalHit.getLocation());
         double slabbedDistance = slabbedHit.getLocation().distanceToSqr(eye);
         if (!Double.isFinite(externalDistance)) {
             return slabbedHit;

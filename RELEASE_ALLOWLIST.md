@@ -62,6 +62,7 @@ com/slabbed/compat/terrainslabs/TerrainSlabsCompat.class
 com/slabbed/compat/sable/
 com/slabbed/compat/sable/SableCellColliderSource.class
 com/slabbed/compat/sable/SableCellKey.class
+com/slabbed/compat/sable/SableHitGeometry.class
 com/slabbed/compat/sable/SablePhysicsHeight$CellCollision.class
 com/slabbed/compat/sable/SablePhysicsHeight$Memo.class
 com/slabbed/compat/sable/SablePhysicsHeight.class
@@ -200,6 +201,7 @@ com/slabbed/compat/terrainslabs/TerrainSlabsCompat.java
 com/slabbed/compat/sable/
 com/slabbed/compat/sable/SableCellColliderSource.java
 com/slabbed/compat/sable/SableCellKey.java
+com/slabbed/compat/sable/SableHitGeometry.java
 com/slabbed/compat/sable/SablePhysicsHeight.java
 com/slabbed/compat/sable/SablePlacementRefresh.java
 com/slabbed/mixin/compat/

@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 final class GameRendererPickOffsetRaycastMixinTest {
     private static final Vec3 EYE = Vec3.ZERO;
+    private static final double STORED_FAR_AWAY = 28_964_562.0d;
 
     @Test
     void keepsSlabbedOwnershipWhenExternalOwnerIsAbsent() {
@@ -59,6 +60,33 @@ final class GameRendererPickOffsetRaycastMixinTest {
         BlockHitResult slabbedMiss = missAt(6.0d);
 
         assertSame(external, select(true, external, slabbedMiss));
+    }
+
+    @Test
+    void measuresExternalOwnerHitByOwnerDistance() {
+        // A sub-level hit reported where the sub-level is stored, 3 blocks from the eye where drawn.
+        BlockHitResult external = hitAt(STORED_FAR_AWAY);
+        BlockHitResult slabbed = hitAt(7.0d);
+
+        assertSame(external, SlabbedOffsetRaycast.selectNearestOwnedHit(
+                EYE, external, slabbed, pos -> 3.0d * 3.0d));
+    }
+
+    @Test
+    void ownerDistanceStillLosesToNearerSlabbedHit() {
+        BlockHitResult external = hitAt(STORED_FAR_AWAY);
+        BlockHitResult slabbed = hitAt(2.0d);
+
+        assertSame(slabbed, SlabbedOffsetRaycast.selectNearestOwnedHit(
+                EYE, external, slabbed, pos -> 3.0d * 3.0d));
+    }
+
+    @Test
+    void plainDistanceLosesStoredExternalOwnerHit() {
+        BlockHitResult external = hitAt(STORED_FAR_AWAY);
+        BlockHitResult slabbed = hitAt(7.0d);
+
+        assertSame(slabbed, select(true, external, slabbed));
     }
 
     private static HitResult select(

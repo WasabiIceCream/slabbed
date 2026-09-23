@@ -1,6 +1,7 @@
 package com.slabbed.mixin.client;
 
 import com.slabbed.Slabbed;
+import com.slabbed.compat.sable.SableHitGeometry;
 import com.slabbed.util.SlabbedOffsetRaycast;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
@@ -16,6 +17,11 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
  * The single ownership rule for Slabbed crosshair targeting (MC 1.21.1).
+ *
+ * <p>Sable replaces the block pick so it also finds its sub-levels. When Sable is loaded its pick
+ * still runs, and a hit on a sub-level competes with the Slabbed hit by Sable's own distance
+ * ({@link SableHitGeometry}); a world hit from it never overrides the Slabbed hit, which is already
+ * the nearest world hit. Without Sable the pick is Slabbed's alone.
  */
 @Mixin(GameRenderer.class)
 public abstract class GameRendererPickOffsetRaycastMixin {
@@ -45,7 +51,9 @@ public abstract class GameRendererPickOffsetRaycastMixin {
         HitResult externalHit = externalOwnerLoaded
                 ? camera.pick(maxDistance, tickDelta, includeFluids)
                 : null;
-        HitResult selected = SlabbedOffsetRaycast.selectNearestOwnedHit(eye, externalHit, offset);
+        HitResult selected = externalOwnerLoaded
+                ? SableHitGeometry.composePick(level, eye, externalHit, offset)
+                : offset;
 
         if (SlabbedOffsetRaycast.TRACE) {
             HitResult traceBaseline = externalOwnerLoaded
