@@ -1,6 +1,6 @@
 package com.slabbed.mixin.client;
 
-import net.minecraft.client.renderer.extract.LevelExtractor;
+import net.minecraft.client.renderer.LevelRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
@@ -38,7 +38,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
  * <p>Sodium's overwrite of this overload is {@code private}, so this invoker dispatches (via the
  * mixin-merged method body) to Sodium's version when Sodium is loaded, and to vanilla's otherwise.
  */
-@Mixin(LevelExtractor.class)
+@Mixin(LevelRenderer.class)
 public interface LevelExtractorImportantDirtyAccessor {
 
     @Invoker("setSectionDirty")

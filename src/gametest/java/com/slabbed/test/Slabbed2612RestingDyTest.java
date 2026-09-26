@@ -21,7 +21,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.level.block.state.properties.SlabType;
-import net.minecraft.world.level.block.state.properties.SpeleothemThickness;
+import net.minecraft.world.level.block.state.properties.DripstoneThickness;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -60,37 +60,37 @@ public final class Slabbed2612RestingDyTest {
     private static BlockState pointedDripstoneUpTip() {
         return Blocks.POINTED_DRIPSTONE.defaultBlockState()
                 .setValue(BlockStateProperties.VERTICAL_DIRECTION, Direction.UP)
-                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, SpeleothemThickness.TIP);
+                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, DripstoneThickness.TIP);
     }
 
     private static BlockState pointedDripstoneDownBase() {
         return Blocks.POINTED_DRIPSTONE.defaultBlockState()
                 .setValue(BlockStateProperties.VERTICAL_DIRECTION, Direction.DOWN)
-                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, SpeleothemThickness.BASE);
+                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, DripstoneThickness.BASE);
     }
 
     private static BlockState pointedDripstoneDownTip() {
         return Blocks.POINTED_DRIPSTONE.defaultBlockState()
                 .setValue(BlockStateProperties.VERTICAL_DIRECTION, Direction.DOWN)
-                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, SpeleothemThickness.TIP);
+                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, DripstoneThickness.TIP);
     }
 
     private static BlockState sulfurSpikeUpTip() {
         return Blocks.SULFUR_SPIKE.defaultBlockState()
                 .setValue(BlockStateProperties.VERTICAL_DIRECTION, Direction.UP)
-                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, SpeleothemThickness.TIP);
+                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, DripstoneThickness.TIP);
     }
 
     private static BlockState sulfurSpikeDownBase() {
         return Blocks.SULFUR_SPIKE.defaultBlockState()
                 .setValue(BlockStateProperties.VERTICAL_DIRECTION, Direction.DOWN)
-                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, SpeleothemThickness.BASE);
+                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, DripstoneThickness.BASE);
     }
 
     private static BlockState sulfurSpikeDownTip() {
         return Blocks.SULFUR_SPIKE.defaultBlockState()
                 .setValue(BlockStateProperties.VERTICAL_DIRECTION, Direction.DOWN)
-                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, SpeleothemThickness.TIP);
+                .setValue(BlockStateProperties.SPELEOTHEM_THICKNESS, DripstoneThickness.TIP);
     }
 
     private static double dy(ServerLevel level, GameTestHelper helper, BlockPos rel) {

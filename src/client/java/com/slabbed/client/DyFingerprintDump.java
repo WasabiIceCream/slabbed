@@ -59,7 +59,7 @@ public final class DyFingerprintDump {
                 return;
             }
             // Suppress while any screen is open (chat / inventory / menu) so typing a "p" never fires it.
-            if (client.gui.screen() != null) {
+            if (client.screen != null) {
                 keyDownLastTick = false;
                 return;
             }

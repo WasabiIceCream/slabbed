@@ -38,7 +38,7 @@ import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.ScaffoldingBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SnowLayerBlock;
-import net.minecraft.world.level.block.SpeleothemBlock;
+import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.SporeBlossomBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.StandingSignBlock;
@@ -374,14 +374,14 @@ public final class SlabSupport {
 
     public static boolean isBeta35UpwardSpeleothemVisibleOwnerObject(BlockState state) {
         return state != null
-                && state.getBlock() instanceof SpeleothemBlock
+                && state.getBlock() instanceof PointedDripstoneBlock
                 && state.hasProperty(BlockStateProperties.VERTICAL_DIRECTION)
                 && state.getValue(BlockStateProperties.VERTICAL_DIRECTION) == Direction.UP;
     }
 
     private static boolean isDownwardSpeleothem(BlockState state) {
         return state != null
-                && state.getBlock() instanceof SpeleothemBlock
+                && state.getBlock() instanceof PointedDripstoneBlock
                 && state.hasProperty(BlockStateProperties.VERTICAL_DIRECTION)
                 && state.getValue(BlockStateProperties.VERTICAL_DIRECTION) == Direction.DOWN;
     }

@@ -27,7 +27,7 @@ import net.minecraft.world.level.block.MossyCarpetBlock;
 import net.minecraft.world.level.block.MultifaceBlock;
 import net.minecraft.world.level.block.RodBlock;
 import net.minecraft.world.level.block.ShelfBlock;
-import net.minecraft.world.level.block.SpeleothemBlock;
+import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.SporeBlossomBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.TripWireHookBlock;
@@ -818,7 +818,7 @@ public final class SlabRigHangingCatalog {
         if (block instanceof MultifaceBlock) {
             return Family.MULTIFACE;
         }
-        if (block instanceof SpeleothemBlock) {
+        if (block instanceof PointedDripstoneBlock) {
             return Family.SPELEOTHEM;
         }
         if (block instanceof HangingRootsBlock || block instanceof SporeBlossomBlock

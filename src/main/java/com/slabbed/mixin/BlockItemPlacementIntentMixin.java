@@ -21,8 +21,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.CraftingTableBlock;
 import net.minecraft.world.level.block.PointedDripstoneBlock;
-import net.minecraft.world.level.block.SpeleothemBlock;
-import net.minecraft.world.level.block.state.properties.SpeleothemThickness;
+import net.minecraft.world.level.block.PointedDripstoneBlock;
+import net.minecraft.world.level.block.state.properties.DripstoneThickness;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.properties.SlabType;
@@ -424,24 +424,24 @@ public abstract class BlockItemPlacementIntentMixin {
                 || placementState == null
                 || !context.getClickedPos().equals(intent.candidatePos())
                 || !(placementState.getBlock() instanceof PointedDripstoneBlock)
-                || !placementState.hasProperty(SpeleothemBlock.TIP_DIRECTION)
-                || !placementState.hasProperty(SpeleothemBlock.THICKNESS)) {
+                || !placementState.hasProperty(PointedDripstoneBlock.TIP_DIRECTION)
+                || !placementState.hasProperty(PointedDripstoneBlock.THICKNESS)) {
             return placementState;
         }
         POINTED_DRIPSTONE_CONTINUATION_INTENT.remove();
-        if (placementState.getValue(SpeleothemBlock.TIP_DIRECTION) == intent.tipDirection()) {
+        if (placementState.getValue(PointedDripstoneBlock.TIP_DIRECTION) == intent.tipDirection()) {
             return placementState;
         }
         BlockState beyondTip = context.getLevel()
                 .getBlockState(intent.candidatePos().relative(intent.tipDirection()));
         boolean opposingTipBeyond = beyondTip.getBlock() instanceof PointedDripstoneBlock
-                && beyondTip.hasProperty(SpeleothemBlock.TIP_DIRECTION)
-                && beyondTip.getValue(SpeleothemBlock.TIP_DIRECTION)
+                && beyondTip.hasProperty(PointedDripstoneBlock.TIP_DIRECTION)
+                && beyondTip.getValue(PointedDripstoneBlock.TIP_DIRECTION)
                 == intent.tipDirection().getOpposite();
         return placementState
-                .setValue(SpeleothemBlock.TIP_DIRECTION, intent.tipDirection())
-                .setValue(SpeleothemBlock.THICKNESS,
-                        opposingTipBeyond ? SpeleothemThickness.TIP_MERGE : SpeleothemThickness.TIP);
+                .setValue(PointedDripstoneBlock.TIP_DIRECTION, intent.tipDirection())
+                .setValue(PointedDripstoneBlock.THICKNESS,
+                        opposingTipBeyond ? DripstoneThickness.TIP_MERGE : DripstoneThickness.TIP);
     }
 
     private static RootAim slabbed$c3CaptureRootAim(UseOnContext context) {

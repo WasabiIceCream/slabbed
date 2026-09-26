@@ -6,7 +6,7 @@ import com.slabbed.mixin.client.LevelExtractorImportantDirtyAccessor;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.extract.LevelExtractor;
+import net.minecraft.client.renderer.LevelRenderer;
 
 /**
  * Single authority for issuing Slabbed's own client section re-mesh as an <b>IMPORTANT</b>
@@ -39,7 +39,7 @@ public final class SlabImportantRemesh {
         if (level == null) {
             return;
         }
-        LevelExtractor extractor = ((ClientLevelLevelExtractorAccessor) level).slabbed$levelExtractor();
+        LevelRenderer extractor = ((ClientLevelLevelExtractorAccessor) level).slabbed$levelExtractor();
         if (extractor == null) {
             return;
         }
