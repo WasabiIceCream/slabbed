@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BUILD_FILE = ROOT / "build.gradle"
 SOURCE_ROOT = ROOT / "src" / "gametest" / "java"
 INVENTORY_FILE = ROOT / "tools" / "gametest-inventory.json"
-EXPECTED_EXECUTABLE_COUNT = 272
+EXPECTED_EXECUTABLE_COUNT = 276
 REQUIRED_LAW_TEST_PATH = "com/slabbed/test/NeighborUpdateInvarianceTest.java"
 EXPECTED_REGISTERED_SERVER_PATHS = frozenset(
     {
@@ -20,6 +20,7 @@ EXPECTED_REGISTERED_SERVER_PATHS = frozenset(
         "com/slabbed/test/CombinedSlabChainingMatrixTest.java",
         "com/slabbed/test/DeepDyConsentTest.java",
         "com/slabbed/test/DySpecificationTest.java",
+        "com/slabbed/test/HangingLoadDeferralTest.java",
         "com/slabbed/test/HangingSeatRememberedTest.java",
         "com/slabbed/test/LegacySupportSeatResolutionTest.java",
         "com/slabbed/test/Mc1211GoblinRouteCanaryGameTest.java",
@@ -42,7 +43,8 @@ EXPECTED_REGISTERED_SERVER_PATHS = frozenset(
         "com/slabbed/test/WallSignAboveSlabTest.java",
     }
 )
-VALID_CLASSIFICATIONS = frozenset({"registered_server", "client_only"})
+# test_support: compiled into the server suite as a helper (probe, test mixin); carries no tests.
+VALID_CLASSIFICATIONS = frozenset({"registered_server", "client_only", "test_support"})
 RAW_JAVA_UNICODE_ESCAPE = re.compile(r"\\u+[0-9A-Fa-f]{4}")
 GAME_TEST_ANNOTATION = re.compile(
     r"@\s*(?:"

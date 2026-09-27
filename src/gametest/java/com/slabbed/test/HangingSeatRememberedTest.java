@@ -37,9 +37,9 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
  * {@code HangingEntityRememberedSeatMixin.slabbed$seatHangBox}, replace the remembered number
  * ({@code slabbed$hangSeatDy()}) with a fresh {@code SlabSupport.getYOffset} read of the support
  * cell ("follow the support") - the reloaded frame's box then tracks the rebuilt flush wall and
- * its minY no longer matches the box it was hung with. Dropping the mint guard in
- * {@code slabbed$mintHangSeatFor} does NOT bite - the per-class read hook restores the saved seat
- * after any re-mint - so do not name that one.
+ * its minY no longer matches the box it was hung with. Dropping the has-seat guard in
+ * {@code slabbed$tryMintHangSeat} also reddens this row: the post-read migration in the load
+ * override would re-read the rebuilt flush wall and overwrite the restored seat.
  *
  * <p>MUTATION for the painting rows: in the same method, drop the shift entirely (return without
  * moving the box). The lowered painting's box then equals the flush control's and the row reds.

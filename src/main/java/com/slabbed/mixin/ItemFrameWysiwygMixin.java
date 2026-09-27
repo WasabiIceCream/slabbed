@@ -25,8 +25,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * <ul>
  *   <li>PERSISTENCE. {@code HangingEntity} declares no save-data hooks, so each hung class writes
- *       and reads the number itself. A frame saved before the seat existed has no key and mints
- *       from its wall on its first server layout (one-time migration).</li>
+ *       and reads the number itself. A frame saved before the seat existed, or placed by world
+ *       generation (which runs off the server thread and never mints), has no key and mints from
+ *       its wall once its data is restored - at once when its chunks are ready, otherwise on a
+ *       later server tick (one-time migration).</li>
  *   <li>RELAY. {@code ItemFrame} re-implements {@code defineSynchedData}, {@code setDirection},
  *       {@code recalculateBoundingBox} and {@code onSyncedDataUpdated} WITHOUT calling super, so
  *       the shared hooks on {@code HangingEntity} never run for a frame. Each relay below calls

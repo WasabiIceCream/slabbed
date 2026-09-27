@@ -2,6 +2,8 @@
   "schema": 1,
   "entries": [
     {"path": "com/slabbed/client/runtime/SlabbedRetargetTestHooks.java", "classification": "client_only"},
+    {"path": "com/slabbed/gametest/PendingHangChunkProbe.java", "classification": "test_support"},
+    {"path": "com/slabbed/gametest/mixin/PendingHangChunkMixin.java", "classification": "test_support"},
     {"path": "com/slabbed/test/CeilingFlushRulingTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/ChainColumnLoweredCapCoherenceTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/ChainUnderLoweredFullBlockCapTest.java", "classification": "registered_server"},
@@ -9,6 +11,7 @@
     {"path": "com/slabbed/test/CombinedSlabChainingMatrixTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/DeepDyConsentTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/DySpecificationTest.java", "classification": "registered_server"},
+    {"path": "com/slabbed/test/HangingLoadDeferralTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/HangingSeatRememberedTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/LegacySupportSeatResolutionTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/Mc1211GoblinRouteCanaryGameTest.java", "classification": "registered_server"},

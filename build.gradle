@@ -129,6 +129,7 @@ sourceSets {
                     "com/slabbed/test/CombinedSlabChainingMatrixTest.java",
                     "com/slabbed/test/DeepDyConsentTest.java",
                     "com/slabbed/test/DySpecificationTest.java",
+                    "com/slabbed/test/HangingLoadDeferralTest.java",
                     "com/slabbed/test/HangingSeatRememberedTest.java",
                     "com/slabbed/test/LegacySupportSeatResolutionTest.java",
                     "com/slabbed/test/Mc1211GoblinRouteCanaryGameTest.java",
@@ -155,7 +156,12 @@ sourceSets {
                     "com/slabbed/dev/SlabbedLabFixtures.java",
                     // Same arrangement: the suite's reach into the capability seam that
                     // replaced the donor's attachment handles.
-                    "com/slabbed/dev/SlabbedTestAccess.java"
+                    "com/slabbed/dev/SlabbedTestAccess.java",
+                    // Test-only not-ready-chunk probe and its mixin. They sit outside
+                    // com/slabbed/test/ because they carry no tests; their mixin config is passed
+                    // to the GameTest run only (see runs.gameTestServer) and never reaches a jar.
+                    "com/slabbed/gametest/PendingHangChunkProbe.java",
+                    "com/slabbed/gametest/mixin/PendingHangChunkMixin.java"
             ])
         }
         resources {
@@ -210,6 +216,9 @@ minecraft {
             property "forge.gameTestServer", "true"
             property "forge.enabledGameTestNamespaces", gameTestNamespace
             args "--nogui"
+            // Test-only mixins, loaded by this run alone. Never list this config in the mixin {}
+            // block below: that block also writes the release jar manifest and the other runs.
+            args "--mixin.config", "slabbed.gametest.mixins.json"
             mods {
                 "${mod_id}" {
                     source sourceSets.main
@@ -291,7 +300,8 @@ tasks.register("verifyReleaseJarHygiene") {
         def forbiddenTokens = [
                 "LiveCursorIntentRecorder", "SlabModelStaleSentinel", "TargetDyOverlay",
                 "SlabbedDevtools", "SlabRigCommand", "SlabTestKit", "slabbed_devtools",
-                "SlabbedLabFixtures", "SlabbedTestAccess"
+                "SlabbedLabFixtures", "SlabbedTestAccess", "PendingHangChunk",
+                "slabbed.gametest.mixins"
         ]
         [tasks.named("jar"), tasks.named("jarJar"), tasks.named("sourcesJar")].each { provider ->
             def archive = provider.get().archiveFile.get().asFile

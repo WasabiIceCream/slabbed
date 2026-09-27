@@ -4,15 +4,18 @@ import com.slabbed.util.HangingSeatDyHolder;
 import com.slabbed.util.SlabSupport;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,7 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * 2026-09-13: where it is placed is where it stays, for everything hung on a wall).
  *
  * <p>The seat is MINTED ONCE - when the decoration is first told which way it faces on the server,
- * with its support loaded, which is the moment the item hangs it - from the support's stored
+ * with its chunks ready, which is the moment the item hangs it - from the support's stored
  * height, and is then carried in synced entity data and in save data. Every later layout reads the
  * remembered number verbatim; nothing here re-reads the support. Rebuilding the wall behind a hung
  * frame at a different height is a change to the WALL, not to the frame (LAW.md, Law 1).
@@ -37,8 +40,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * position packet) and {@code survives()} then judges the wrong support. Only the bounding box
  * shifts here, and the render layer applies the same remembered seat to the drawing.
  *
- * <p>A decoration saved before this seat existed carries no number; its first server layout mints
- * one from the wall it hangs on today. That is a one-time migration, not a re-derivation.
+ * <p>A decoration saved before this seat existed, or placed by world generation (which runs off the
+ * server thread and never mints), carries no number; after its data is restored, chunks that are
+ * already ready allow a mint from its wall at once, otherwise a later server tick retries. That is
+ * a one-time migration, not a re-derivation.
+ *
+ * <p>NO WAITING ON CHUNKS. Save data can be restored on the server thread while the chunk the
+ * decoration lives in is still being promoted to a full chunk (world-generated decorations are
+ * restored exactly there), and waiting on that chunk from inside its own promotion never returns.
+ * So no mint runs while save data is read, and the mint reads only chunks that
+ * {@code ServerChunkCache.getChunkNow} already hands out. Do not reintroduce {@code hasChunkAt} or
+ * {@code Level.getBlockState} here: the first answers "scheduled", not "ready", and the second waits.
  *
  * <p>WHY THE MINT IS AT THE HEAD OF {@code setDirection} on this line: here the direction setter
  * is not raw - it ends by laying the box out. Minting at its tail would leave that first layout
@@ -73,6 +85,18 @@ public abstract class HangingEntityRememberedSeatMixin extends Entity implements
     /** Holds the seated box while {@code survives()} judges the unshifted grid cells. */
     @Unique
     private AABB slabbed$seatedBoxDuringSurvival;
+
+    /** True while {@code Entity.load} restores this decoration; no mint may run inside it. */
+    @Unique
+    private boolean slabbed$readingData;
+
+    /**
+     * True once a facing has reached the shared mint relay. Leash knots replace
+     * {@code setDirection} with a no-op and never set it, so the tick retry never seats them. Do not
+     * replace this with a check on {@code direction}: that field starts out non-null.
+     */
+    @Unique
+    private boolean slabbed$facingAssigned;
 
     protected HangingEntityRememberedSeatMixin(EntityType<?> type, Level level) {
         super(type, level);
@@ -119,25 +143,71 @@ public abstract class HangingEntityRememberedSeatMixin extends Entity implements
     /**
      * The ONE derivation, at the moment the decoration learns which way it faces: both the item's
      * hang path and the load path set the direction with the position already known, and the box
-     * is laid out right after. Server thread only (a hang from any other thread would answer
-     * through the server and could wait on it); support loaded (an unloaded support answers
-     * nothing, not "flush"). A saved seat restored by the per-class read hook wins over this mint.
+     * is laid out right after. On the load path the facing is only recorded; the mint waits for the
+     * read to finish. A saved seat restored by the per-class read hook wins over any mint.
      */
     @Override
     public void slabbed$mintHangSeatFor(Direction facing) {
-        if (facing == null || this.pos == null || this.slabbed$hasHangSeat()) {
-            return;
+        if (facing != null) {
+            this.slabbed$facingAssigned = true;
+        }
+        this.slabbed$tryMintHangSeat(facing);
+    }
+
+    /**
+     * Server thread only (a hang from any other thread would answer through the server and could
+     * wait on it), never while save data is read, and only from chunks that are already ready: the
+     * attachment's chunk and the support's chunk are both taken from {@code getChunkNow}, which
+     * never schedules and never waits. An unready chunk defers the mint to a later tick, not to a
+     * guessed "flush" seat.
+     *
+     * @return true when a seat was minted just now (the caller lays the box out once)
+     */
+    @Unique
+    private boolean slabbed$tryMintHangSeat(Direction facing) {
+        if (this.slabbed$readingData || !this.slabbed$facingAssigned || facing == null || this.pos == null
+                || !this.getEntityData().hasItem(SLABBED$HANG_DY) || this.slabbed$hasHangSeat()) {
+            return false;
         }
         if (!(this.level() instanceof ServerLevel level) || !level.getServer().isSameThread()) {
-            return;
+            return false;
+        }
+        ServerChunkCache chunks = level.getChunkSource();
+        if (chunks.getChunkNow(this.pos.getX() >> 4, this.pos.getZ() >> 4) == null) {
+            return false;
         }
         BlockPos supportPos = this.pos.relative(facing.getOpposite());
-        if (!level.hasChunkAt(supportPos)) {
-            return;
+        LevelChunk supportChunk = chunks.getChunkNow(supportPos.getX() >> 4, supportPos.getZ() >> 4);
+        if (supportChunk == null) {
+            return false;
         }
-        BlockState support = level.getBlockState(supportPos);
+        BlockState support = supportChunk.getBlockState(supportPos);
         double dy = SlabSupport.getYOffset(level, supportPos, support);
         this.slabbed$restoreHangSeatDy(Double.isFinite(dy) ? dy : 0.0d);
+        return true;
+    }
+
+    /**
+     * Restoring may run inside chunk promotion; only saved seats are restored until it finishes.
+     * Afterwards a missing seat is minted at once if the chunks are already ready. The restored
+     * centre is checked because a wide painting's centre can sit in a different chunk from its
+     * attachment. This override must reach {@code Entity.load} under its obfuscated name in the
+     * shipped jar, or the reading flag never rises outside development.
+     */
+    @Override
+    public void load(CompoundTag tag) {
+        this.slabbed$readingData = true;
+        try {
+            super.load(tag);
+        } finally {
+            this.slabbed$readingData = false;
+        }
+        BlockPos entityPos = this.blockPosition();
+        if (this.level() instanceof ServerLevel level && level.getServer().isSameThread()
+                && level.getChunkSource().getChunkNow(entityPos.getX() >> 4, entityPos.getZ() >> 4) != null
+                && this.slabbed$tryMintHangSeat(this.direction)) {
+            this.recalculateBoundingBox();
+        }
     }
 
     /** Apply the remembered seat to the freshly laid-out box; the position set just before stays on the grid. */
@@ -204,5 +274,13 @@ public abstract class HangingEntityRememberedSeatMixin extends Entity implements
     public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
         super.onSyncedDataUpdated(key);
         this.slabbed$relayoutOnSyncedSeat(key);
+    }
+
+    /** A deferred mint lands on the first server tick whose chunks are ready, and lays the box out once. */
+    @Inject(method = "tick()V", at = @At("HEAD"))
+    private void slabbed$retryDeferredSeatMint(CallbackInfo ci) {
+        if (this.slabbed$tryMintHangSeat(this.direction)) {
+            this.recalculateBoundingBox();
+        }
     }
 }

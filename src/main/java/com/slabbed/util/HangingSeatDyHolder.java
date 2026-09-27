@@ -33,7 +33,12 @@ public interface HangingSeatDyHolder {
     /** Declares the synced seat key; called from every {@code defineSynchedData} that skips super. */
     void slabbed$declareHangSeatKey();
 
-    /** The ONE derivation; called from every {@code setDirection} that skips super, before layout. */
+    /**
+     * The ONE derivation; called from every {@code setDirection} that skips super, before layout.
+     * Records that the decoration has a facing; mints only on the server thread, never while save
+     * data is being read, and only from chunks already available without waiting (the end of the
+     * read, or a later server tick, retries).
+     */
     void slabbed$mintHangSeatFor(Direction direction);
 
     /** Applies the remembered seat to a freshly laid-out box; called at every layout's tail. */
