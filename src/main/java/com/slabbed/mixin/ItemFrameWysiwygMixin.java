@@ -22,8 +22,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * <p>The seat itself — the one derivation, the synced field, the shift applied to the bounding box
  * — lives in {@code HangingEntityRememberedSeatMixin}, shared with paintings. This class only
  * forwards the hooks that {@code HangingEntity} does not declare on this version, and persists the
- * number. A frame saved before the seat existed has no key and mints from its wall on its first
- * server layout (one-time migration). Keep these forwarders identical to the painting's.
+ * number. A frame saved before the seat existed has no key; once its data is read it mints from
+ * its wall if its chunks are ready, otherwise on a later server tick (one-time migration). Keep
+ * these forwarders identical to the painting's.
  *
  * <p>The entity's real position stays at grid height (the box moves, the position does not);
  * moving it corrupts the derived grid cell and {@code survives()} judges the wrong support.

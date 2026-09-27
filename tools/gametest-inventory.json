@@ -9,6 +9,7 @@
     {"path": "com/slabbed/test/CombinedSlabChainingMatrixTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/DeepDyConsentTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/DySpecificationTest.java", "classification": "registered_server"},
+    {"path": "com/slabbed/test/HangingLoadDeferralTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/HangingSeatRememberedTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/ItemFrameWysiwygBoxTest.java", "classification": "registered_server"},
     {"path": "com/slabbed/test/Issue34PonderRenderViewProof.java", "classification": "registered_server"},

@@ -43,13 +43,14 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * <ul>
  *   <li>Reload row: in {@code HangingEntityRememberedSeatMixin.slabbed$hangBoxOnRememberedSeat},
  *       replace the remembered number with a fresh read of the support's height ("follow the
- *       support"). Dropping the mint guard in {@code slabbed$mintHangSeatFromWall} does NOT bite —
- *       the per-class read hook restores the saved seat after any re-mint — so do not name that
- *       one.</li>
+ *       support"). Dropping the {@code slabbed$hasHangSeat} guard in
+ *       {@code slabbed$tryMintHangSeat} also reddens it: the post-read retry in {@code load} runs
+ *       after the per-class read hook has restored the saved seat, and without the guard it
+ *       re-mints from the rebuilt flush wall.</li>
  *   <li>Painting row: return {@code 0.0} unconditionally from
  *       {@code HangingEntityRememberedSeatMixin.slabbed$hangSeatDy}; the lowered painting's box
  *       returns to grid height while the control stays put.</li>
- *   <li>Migration row: make {@code slabbed$mintHangSeatFromWall} return before it writes; a frame
+ *   <li>Migration row: make {@code slabbed$tryMintHangSeat} return false before it writes; a frame
  *       with no saved number then stays at 0.</li>
  * </ul>
  *

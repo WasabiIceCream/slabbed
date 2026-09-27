@@ -130,6 +130,7 @@ sourceSets {
                     "com/slabbed/test/CombinedSlabChainingMatrixTest.java",
                     "com/slabbed/test/DeepDyConsentTest.java",
                     "com/slabbed/test/DySpecificationTest.java",
+                    "com/slabbed/test/HangingLoadDeferralTest.java",
                     "com/slabbed/test/HangingSeatRememberedTest.java",
                     "com/slabbed/test/ItemFrameWysiwygBoxTest.java",
                     "com/slabbed/test/LegacySupportSeatResolutionTest.java",

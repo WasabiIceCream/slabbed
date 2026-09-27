@@ -36,7 +36,9 @@ public interface HangingSeatDyHolder {
 
     /**
      * Bridge: the ONE derivation, called from each hung class's facing setter once the position
-     * and the facing are both known. Does nothing when a seat already exists.
+     * and the facing are both known. Does nothing when a seat already exists, while save data is
+     * being read, or while the decoration's or its support's chunk is not loaded yet (a later
+     * server tick retries). Never loads a chunk.
      */
     void slabbed$mintHangSeatFromWall();
 
