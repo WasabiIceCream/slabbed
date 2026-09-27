@@ -1,3 +1,19 @@
+## [0.5.2-beta.3] - Minecraft 1.20.1 (Forge)
+
+Hotfix for a server stall while newly generated areas restore paintings or item frames.
+
+### Fixes
+
+- **Opening newly generated areas that contain paintings or item frames no longer freezes the game.**
+  When a chunk finished generating, restoring the decorations saved in it asked for the chunk's blocks
+  through a lookup that could wait for the chunk to finish loading, from inside the very load it was
+  waiting on, and the server thread stalled for good. Slow terrain generation made it far more likely.
+  Restoring a decoration now only uses lookups that answer "not ready yet" instead of waiting, keeps
+  any height already saved with it, and otherwise takes its height on a later tick once its area is
+  actually there. Decorations from before the remembered-height change, and ones placed by world
+  generation, get their height the same way: a one-time migration, never a re-derivation of a saved
+  height.
+
 ## [0.5.2-beta.2] - Minecraft 1.20.1 (Forge)
 
 Hotfix for 0.5.2-beta.1, which failed to start in a real launcher (see the Forge fixes below).
