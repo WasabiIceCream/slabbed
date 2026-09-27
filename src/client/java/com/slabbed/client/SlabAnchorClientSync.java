@@ -279,7 +279,11 @@ public final class SlabAnchorClientSync {
                 if (SlabAnchorAttachment.isCompoundVisibleAttachmentType(attachmentType.get())) {
                     scheduleCompoundVisibleRenderRefresh(mc, rerenderPos, current, attachmentType);
                 } else {
-                    mc.levelRenderer.setBlockDirty(rerenderPos, current, current);
+                    // Height attachments change without changing the block state, and the
+                    // state-comparing overload skips identical states, so it would drop this.
+                    mc.levelRenderer.setBlocksDirty(
+                            rerenderPos.getX(), rerenderPos.getY(), rerenderPos.getZ(),
+                            rerenderPos.getX(), rerenderPos.getY(), rerenderPos.getZ());
                 }
             }
         }

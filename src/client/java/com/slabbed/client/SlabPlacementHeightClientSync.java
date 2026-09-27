@@ -65,6 +65,9 @@ public final class SlabPlacementHeightClientSync {
             ClientRenderDyPrediction.forget(packed);
             return facts.get(packed);
         });
+        // An expired prediction changes the drawn height with the block state unchanged, so the
+        // section must be rebuilt explicitly or it keeps the predicted geometry.
+        ClientRenderDyPrediction.installExpiryHook(SlabPlacementHeightClientSync::redrawExpiredPrediction);
         eventBus.addListener(SlabPlacementHeightClientSync::onChunkLoad);
         eventBus.addListener(SlabPlacementHeightClientSync::onChunkUnload);
         eventBus.addListener(SlabPlacementHeightClientSync::pollAttachmentChanges);
@@ -149,6 +152,21 @@ public final class SlabPlacementHeightClientSync {
                     pos.getX(), pos.getY(), pos.getZ());
             proofRefreshObserver.accept(pos);
         }
+    }
+
+    private static void redrawExpiredPrediction(long packed) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!minecraft.isSameThread()) {
+            minecraft.execute(() -> redrawExpiredPrediction(packed));
+            return;
+        }
+        if (minecraft.level == null || minecraft.levelRenderer == null) {
+            return;
+        }
+        BlockPos pos = BlockPos.of(packed);
+        minecraft.levelRenderer.setBlocksDirty(
+                pos.getX(), pos.getY(), pos.getZ(),
+                pos.getX(), pos.getY(), pos.getZ());
     }
 
     private static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
