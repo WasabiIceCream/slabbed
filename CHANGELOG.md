@@ -1,3 +1,33 @@
+## [0.5.2-alpha.21] - Minecraft 1.21.1 (NeoForge)
+
+Version note: alpha.21 is the next free number in the shared alpha series across all Slabbed lines.
+
+### Fixes
+
+- **Opening newly generated areas that contain paintings or item frames no longer freezes the game.**
+  When a chunk finished generating, restoring the decorations saved in it asked for the chunk's blocks
+  through a lookup that could wait for the chunk to finish loading, from inside the very load it was
+  waiting on, and the server thread stalled for good. Slow terrain generation made it far more likely.
+  Restoring a decoration now only uses lookups that answer "not ready yet" instead of waiting, keeps
+  any height already saved with it, and otherwise takes its height on a later tick once its area is
+  actually there. Decorations from before the remembered-height change, and ones placed by world
+  generation, get their height the same way: a one-time migration, never a re-derivation of a saved
+  height.
+
+- **Redraw requests are no longer dropped when only stored-height data changes.** A block whose
+  remembered height arrived without a block-state change, or whose placement prediction expired
+  before a stored height replaced it, could keep stale geometry until something else redrew its
+  section. Those redraws are now requested unconditionally.
+
+### Compatibility
+
+- **Clicks land on Sable objects instead of passing through.** Sable reports a hit on one of its
+  physics objects at the object's internal storage position, far from the player, so a plain distance
+  comparison let any world block behind the object win the crosshair. Such hits are now compared with
+  Sable's own distance, and a Sable hit that is not on a physics object never overrides the world hit.
+- **Arrows and sight lines stop at Sable objects.** The same comparison now applies to projectile and
+  line-of-sight clipping, and a ray that is re-marched past a lowered block also clips Sable's objects.
+
 ## [0.5.2-alpha.20] - Minecraft 1.21.1 (NeoForge)
 
 Version note: alpha.20 is the next free number in the shared alpha series across all Slabbed lines.
