@@ -19,8 +19,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * <p>The seat itself — minted once when the frame is hung, carried in entity data, applied to the
  * bounding box — lives in {@code HangingEntityRememberedSeatMixin}, shared with paintings. This
  * class only persists it: {@code HangingEntity} declares no save-data hooks, so each hung class
- * writes and reads the number itself. A frame saved before the seat existed has no key and mints
- * from its wall on its first server layout (one-time migration).
+ * writes and reads the number itself. A frame saved before the seat existed has no key; once its
+ * data is restored it mints from its wall as soon as its chunks are ready (right after the read, or
+ * on a later tick) — a one-time migration.
  *
  * <p>The entity's real position stays at grid height (the box moves, the position does not);
  * moving it corrupts the derived grid cell and {@code survives()} judges the wrong support.
