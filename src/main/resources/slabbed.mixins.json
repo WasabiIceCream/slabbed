@@ -40,7 +40,11 @@
     "WallRedstoneTorchParticleMixin",
     "WallSlabConnectionMixin",
     "WallTorchParticleMixin",
-    "torch.TorchBlockMixin"
+    "torch.TorchBlockMixin",
+    "BaseRailBlockSlopeShapeMixin",
+    "LoweredRailSupportNeighborMixin",
+    "PoweredRailVisualSignalMixin",
+    "RedstoneWireEvaluatorVisualStepMixin"
   ],
   "client": [],
   "injectors": {

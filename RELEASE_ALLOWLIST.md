@@ -93,6 +93,10 @@ anything. The split above puts the fine granularity only where a leak has actual
 
 | Entry | Reason |
 | --- | --- |
+| `com/slabbed/mixin/BaseRailBlockSlopeShapeMixin` | A rail's outline/raycast box follows the fitted slope profile it is drawn with (maintainer ruling, 2026-09-28). |
+| `com/slabbed/mixin/PoweredRailVisualSignalMixin` | A powered rail seated on a lowered block is also powered by what touches the cell it is drawn in, in its own update and in the rail-to-rail chain check (maintainer ruling, 2026-09-28). |
+| `com/slabbed/mixin/LoweredRailSupportNeighborMixin` | A neighbour change delivered to the cell a lowered powered rail is drawn in is forwarded to the rail, so a lever or repeater beside the slab reaches it (maintainer ruling, 2026-09-28). |
+| `com/slabbed/mixin/RedstoneWireEvaluatorVisualStepMixin` | A redstone wire beside a lowered half-step also reads the wire drawn on the slab next to it, so dust carries power down a lowered half-step as well as up (maintainer ruling, 2026-09-28). |
 | `com/slabbed/mixin/BlockCollisionsLoweredAboveMixin` | Collision against a lowered slab above. |
 | `com/slabbed/mixin/BlockItemPlacementIntentMixin` | Captures placement intent for the WYSIWYG placement law. |
 | `com/slabbed/mixin/BlockOnPlacedAnchorMixin` | Writes the anchor on placement. |
@@ -167,6 +171,9 @@ anything. The split above puts the fine granularity only where a leak has actual
 | `com/slabbed/util/HangingSeatDyHolder` | Duck interface exposing a hung decoration's remembered seat. |
 | `com/slabbed/util/PlacementIntentState` | Placement intent carried across the use-on path. |
 | `com/slabbed/util/PlacementVerificationVerdict` | Placement verification result type. |
+| `com/slabbed/util/RailSlopeProfile` | The rail slope-fitting rule: a straight rail's drawn end heights fit the rail it connects to (maintainer ruling, 2026-09-28). Pure and server-loadable; a stored seat is read, never written. |
+| `com/slabbed/util/RailVisualSignal` | The cell a lowered rail is drawn in and the redstone arriving at that cell — the read the powered-rail hooks share (maintainer ruling, 2026-09-28). Pure and server-loadable; a stored seat is read, never written. |
+| `com/slabbed/util/WireVisualSignal` | The wire drawn beside a lowered redstone wire — the read the wire evaluator hook shares (maintainer ruling, 2026-09-28). Pure and server-loadable; a stored seat is read, never written. |
 | `com/slabbed/util/SlabEnsembleCoherence` | Combined-slab ensemble coherence law. |
 | `com/slabbed/util/SlabSupport` | Support-surface resolution. |
 | `com/slabbed/util/SlabbedOffsetColliderClip` | Neighbour-aware COLLIDER clip supplement (sight, shelter, projectiles follow the drawn body). |
