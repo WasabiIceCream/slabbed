@@ -63,6 +63,7 @@
       "com.slabbed.test.HangingLoadDeferralTest",
       "com.slabbed.test.NonNotifyingRemovalHeightTest",
       "com.slabbed.test.RailSlopeProfileTest",
+      "com.slabbed.test.FenceCeilingConnectionTest",
       "com.slabbed.test.RailVisualSignalTest",
       "com.slabbed.test.RedstoneWireVisualStepTest",
       "com.slabbed.test.RelocatedPlacementAimTest",
@@ -121,7 +122,8 @@
       "com.slabbed.test.ModelStaleSentinelSelfCheckClientGameTest",
       "com.slabbed.client.SlabModelStaleSentinelClientThrottleClientGameTest",
       "com.slabbed.test.LeverParticleFrozenAnchorClientGameTest",
-      "com.slabbed.test.DevDiagnosticsCompanionLoadsClientGameTest"
+      "com.slabbed.test.DevDiagnosticsCompanionLoadsClientGameTest",
+      "com.slabbed.test.FenceCeilingRenderClientGameTest"
     ]
   },
   "mixins": [

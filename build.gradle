@@ -382,6 +382,8 @@ sourceSets {
             include("com/slabbed/test/HangingLoadDeferralTest.java")
             include("com/slabbed/test/NonNotifyingRemovalHeightTest.java")
             include("com/slabbed/test/RailSlopeProfileTest.java")
+            include("com/slabbed/test/FenceCeilingConnectionTest.java")
+            include("com/slabbed/test/FenceCeilingRenderClientGameTest.java")
             include("com/slabbed/test/RailVisualSignalTest.java")
             include("com/slabbed/test/RedstoneWireVisualStepTest.java")
             include("com/slabbed/test/PendingHangChunkProbe.java")
