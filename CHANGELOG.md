@@ -1,71 +1,17 @@
-## [Unreleased]
+## [0.6.1-alpha+26.2]
 
 See LAW.md — this changelog does not redefine the law.
 
-### Changed
+- Fence posts now meet a nearby slab ceiling across a half-block gap. The post keeps its placed height, and its visible connection can be targeted correctly.
+- Placing a fitting post beneath a lowered slab now uses the available space correctly.
+- Slabs keep their saved height when they change material without changing shape.
+- Direct block replacements clear the departed block's height, so a later placement cannot inherit it.
+- Deep side placements follow the aimed face and stop at the actual landing surface.
+- Placing supported blocks on farmland or dirt paths converts the support to dirt when appropriate; crops retain their farmland.
+- Tilling or shovelling a lowered block preserves its placed height.
+- Lowered campfire particles now rise from the visible fire.
 
-- **No more Indium suggestion.** The mod no longer recommends Indium; that mod never existed for
-  this Minecraft version and Slabbed has not needed it since it moved to Fabric's own rendering
-  API (maintainer ruling, 2026-09-03).
-
-### Fixes
-
-- **Tilling and shovelling keep a lowered block lowered.** Turning a lowered dirt block into farmland
-  with a hoe, or a lowered grass block into a dirt path with a shovel, used to drop the block back to
-  normal height, because the freshly transformed block is a sliver shorter than a full cube and the
-  height-lock treated it like a brand-new kind of block. The block you placed is still there, only
-  transformed, so it now stays exactly where you put it (maintainer ruling, 2026-09-03). Any in-place
-  transform whose result still fills the cell (at least 15/16 tall) keeps its height; slabs, carpets
-  and other partial replacements still clear it as before.
-- **Starts alongside Lithium.** With Lithium installed, the game crashed on startup before the
-  title screen, because both mods rewrite the same piece of Minecraft's explosion code. It now
-  starts, and explosions behind a lowered block follow normal Minecraft rules while Lithium is
-  present (Lithium's optimised explosion path stays in charge there). Arrows and snowballs still
-  hit a lowered block where it is drawn, and mobs still cannot see through it, with Lithium
-  installed. ([#74](https://github.com/peetsamods/slabbed/issues/74))
-- **Lowered blocks stay solid with Lithium installed.** Lithium swaps in its own, faster search
-  for the blocks an entity can bump into, and that search never saw the part of a lowered block
-  that hangs below its grid cell, so with Lithium you could walk through the lower half of what
-  you can see. Slabbed now adds that hanging part to Lithium's search as well (only after checking
-  that Lithium's search is present and still looks the way this build was tested against; a future
-  Lithium that changes it gets a warning in the log instead of a crash).
-  One narrow edge stays open: a lowered block hanging into a 16×16×16 chunk section that is
-  otherwise completely empty is still missed by Lithium's search, which skips empty sections
-  outright.
-- **Dirt paths and farmland convert to dirt under your placements.** Placing a block on a dirt
-  path or farmland now converts the trampled block to dirt first, the same way vanilla does
-  under solid full blocks — so the placed piece sits on a real full surface instead of a
-  1/16-sunken sliver the height bookkeeping reads dishonestly. Planting is safe: a crop that
-  NEEDS the farmland (seeds) converts nothing and plants normally, and a conversion whose
-  placement fails afterwards is rolled back exactly (maintainer ruling, 2026-09-01).
-- **Side placements are exact at every depth.** Clicking the visible side face of a deeply
-  lowered block already landed the new piece at the aimed height, but the placement's internal
-  bookkeeping disagreed with itself past half a block: a deep landing over solid ground was
-  stamped "flat" while its exact height said otherwise, and a deep slab fed neighbours a
-  half-block floor instead of its real depth. The bookkeeping now follows the aimed face
-  (maintainer ruling, 2026-09-01: WYSIWYG is absolute). Where the aim would bury the piece in
-  solid ground, the placement now seats on the real surface — aim is honored to the physical
-  limit, never past it, and the stored height agrees with what you see (maintainer ruling,
-  2026-09-02: the burial arbitration resolves to the real seat).
-- **Item frames and paintings hang where you see the block, and remember it.** A frame or painting
-  placed on a lowered block's visible face hung at normal grid height, floating above (or beside) the
-  surface it was aimed at. Both now hang on the drawn face, and both remember the height of the face
-  they were hung on: it is decided once, when you hang them, saved with the world, and never re-read
-  from the wall. Rebuilding the wall behind a frame at a different height moves the wall, not the
-  frame (maintainer ruling, 2026-09-13: where you place it is where it stays applies to everything
-  hung on a wall). Frames and paintings from an older save take their height from their wall once, the
-  first time they load, and remember it from then on. Under the hood only the clickable box and the
-  drawing move; the real position stays on the grid so support checks keep judging the right block.
-- **Campfire smoke rises from the fire, not above it.** A lowered campfire's crackle, smoke
-  column, and cooking smoke all spawned at normal grid height, hovering in the air above the
-  visible fire. All three now emit from the campfire's drawn height (maintainer ruling,
-  2026-09-01).
-- **Chains follow a lowered beam.** A chain hanging under an ordinary lowered block (a cantilevered
-  beam, for instance — not a slab) stayed at grid height while the lantern on the same chain
-  correctly followed the beam down, so the beam's lowered body visually sank into the chain's top
-  segment. The chain now follows its cap exactly, and everything hanging from the chain agrees with
-  it (maintainer ruling, 2026-09-01). Chains under top/double slabs are untouched — they keep their
-  dedicated flush bridge rendering.
+Release labels now use major.minor.patch plus a maturity label, without numbered alpha or beta counters.
 
 ## [0.5.2-alpha.1+26.2] — MC 26.2 alpha
 
