@@ -101,6 +101,7 @@ anything. The split above puts the fine granularity only where a leak has actual
 | `com/slabbed/mixin/BlockItemPlacementIntentMixin` | Captures placement intent for the WYSIWYG placement law. |
 | `com/slabbed/mixin/BlockOnPlacedAnchorMixin` | Writes the anchor on placement. |
 | `com/slabbed/mixin/BlockOnStateReplacedAnchorMixin` | Clears the anchor on state replacement. |
+| `com/slabbed/mixin/LevelChunkOccupantChangeAnchorMixin` | Clears departed occupants at the chunk write funnel independently of notification flags. |
 | `com/slabbed/mixin/BrewingStandParticleMixin` | Particle origin follows the lowered block. |
 | `com/slabbed/mixin/CampfireCookingParticleMixin` | Particle origin follows the lowered block. |
 | `com/slabbed/mixin/CampfireParticleMixin` | Particle origin follows the lowered block. |

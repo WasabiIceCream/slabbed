@@ -344,12 +344,10 @@ public final class SlabRigCommandSmokeTest {
         BlockPos laterSubject = bCell.above();
         w.setBlock(laterSubject, Blocks.GOLD_BLOCK.defaultBlockState(), 3);
         BlockPos alreadyAirAttachment = bCell.above(2);
-        w.setBlock(alreadyAirAttachment, Blocks.GOLD_BLOCK.defaultBlockState(), 2);
-        SlabAnchorAttachment.capturePlacementDy(w, alreadyAirAttachment,
-                w.getBlockState(alreadyAirAttachment));
         w.setBlock(alreadyAirAttachment, Blocks.AIR.defaultBlockState(), 2);
+        SlabAnchorAttachment.writePlacementDy(w, alreadyAirAttachment, -0.5d);
         if (Double.isNaN(SlabAnchorAttachment.storedPlacementDy(w, alreadyAirAttachment))) {
-            throw h.assertionException("premise: flag-2 removal must leave a stored-dy touch on the air slot");
+            throw h.assertionException("premise: the air guard fixture must carry a stored-dy touch");
         }
         exec(h, source, "slabrig clear");
         assertAir(h, w, sCell, "recipe S after clear");
@@ -495,12 +493,11 @@ public final class SlabRigCommandSmokeTest {
         SlabAnchorAttachment.capturePlacementDy(w, reservedOnly, w.getBlockState(reservedOnly));
         double stored = SlabAnchorAttachment.storedPlacementDy(w, reservedOnly);
         BlockPos hauntedAir = base.offset(-2, 1, -2);
-        w.setBlock(hauntedAir, Blocks.GOLD_BLOCK.defaultBlockState(), 2);
-        SlabAnchorAttachment.capturePlacementDy(w, hauntedAir, w.getBlockState(hauntedAir));
         w.setBlock(hauntedAir, Blocks.AIR.defaultBlockState(), 2);
+        SlabAnchorAttachment.writePlacementDy(w, hauntedAir, -0.5d);
         double hauntedStored = SlabAnchorAttachment.storedPlacementDy(w, hauntedAir);
         if (Double.isNaN(hauntedStored)) {
-            throw h.assertionException("premise: flag-2 air must retain haunted stored dy");
+            throw h.assertionException("premise: the haunted air fixture must carry stored dy");
         }
 
         int built = tryExec(source, "slabrig cases 1 force");
@@ -638,13 +635,11 @@ public final class SlabRigCommandSmokeTest {
                 h.absolutePos(new BlockPos(30, 2, 0)));
         BlockPos base = SlabRigCommand.rigBase(source);
         BlockPos hauntedEffect = base.above();
-        world.setBlock(hauntedEffect, Blocks.GOLD_BLOCK.defaultBlockState(), 2);
-        SlabAnchorAttachment.capturePlacementDy(world, hauntedEffect,
-                world.getBlockState(hauntedEffect));
         world.setBlock(hauntedEffect, Blocks.AIR.defaultBlockState(), 2);
+        SlabAnchorAttachment.writePlacementDy(world, hauntedEffect, -0.5d);
         double before = SlabAnchorAttachment.storedPlacementDy(world, hauntedEffect);
         if (Double.isNaN(before)) {
-            throw h.assertionException("premise: flag-2 air must retain stored dy inside effect cell");
+            throw h.assertionException("premise: the effect guard fixture must carry stored dy");
         }
 
         int refused = tryExec(source, "slabrig cases 1");
@@ -858,8 +853,8 @@ public final class SlabRigCommandSmokeTest {
                                 "premise: real creative proxy path must place stone before vanish");
                     }
                     creativePlaced[0] = true;
-                    SlabAnchorAttachment.capturePlacementDy(world, creativeTarget, placed);
                     world.setBlock(creativeTarget, Blocks.AIR.defaultBlockState(), 2);
+                    SlabAnchorAttachment.writePlacementDy(world, creativeTarget, -0.5d);
                 });
         try {
             if (tryExec(creativeSource, "slabrig cases " + page + " force") != 1

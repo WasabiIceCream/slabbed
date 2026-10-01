@@ -61,6 +61,7 @@
       "com.slabbed.test.ReplaceableCellSeatTest",
       "com.slabbed.test.HangingSeatRememberedTest",
       "com.slabbed.test.HangingLoadDeferralTest",
+      "com.slabbed.test.NonNotifyingRemovalHeightTest",
       "com.slabbed.test.RailSlopeProfileTest",
       "com.slabbed.test.RailVisualSignalTest",
       "com.slabbed.test.RedstoneWireVisualStepTest",

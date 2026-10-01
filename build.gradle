@@ -380,6 +380,7 @@ sourceSets {
             include("com/slabbed/test/ReplaceableCellSeatTest.java")
             include("com/slabbed/test/HangingSeatRememberedTest.java")
             include("com/slabbed/test/HangingLoadDeferralTest.java")
+            include("com/slabbed/test/NonNotifyingRemovalHeightTest.java")
             include("com/slabbed/test/RailSlopeProfileTest.java")
             include("com/slabbed/test/RailVisualSignalTest.java")
             include("com/slabbed/test/RedstoneWireVisualStepTest.java")

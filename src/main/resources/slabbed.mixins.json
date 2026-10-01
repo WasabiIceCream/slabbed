@@ -8,7 +8,7 @@
     "BlockCollisionsLoweredAboveMixin",
     "BlockItemPlacementIntentMixin",
     "BlockOnPlacedAnchorMixin",
-    "BlockOnStateReplacedAnchorMixin",
+    "LevelChunkOccupantChangeAnchorMixin",
     "BrewingStandParticleMixin",
     "CampfireCookingParticleMixin",
     "CampfireParticleMixin",
