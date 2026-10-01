@@ -27,6 +27,8 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -987,11 +989,30 @@ public final class SlabAnchorAttachment {
                 && oldState.getBlock() instanceof FlowerPotBlock
                 && newState.getBlock() instanceof FlowerPotBlock;
         return flowerPotStateTransition
+                || isSameShapeTransform(oldState, newState)
                 || isOrdinaryFullBlockAnchorCandidate(world, pos, newState)
                 || isFullFootprintOccupant(newState)
                 || (newState.getBlock() instanceof EntityBlock
                         && !SlabSupport.isAlwaysCeilingHungDecoration(newState))
                 || isConnectingStructural(newState);
+    }
+
+    /** A kind-only transform keeps its canonical shape and placed height (LAW.md). */
+    public static boolean isSameShapeTransform(BlockState oldState, BlockState newState) {
+        if (oldState == null || newState == null || oldState.isAir() || newState.isAir()
+                || !newState.getFluidState().isEmpty() || oldState.is(newState.getBlock())) {
+            return false;
+        }
+        VoxelShape before = oldState.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+        VoxelShape after = newState.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+        if (before.isEmpty() || after.isEmpty()) {
+            before = oldState.getShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+            after = newState.getShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+            if (before.isEmpty() || after.isEmpty()) {
+                return false;
+            }
+        }
+        return !Shapes.joinIsNotEmpty(before, after, BooleanOp.NOT_SAME);
     }
 
     /** A same-position transform keeps the lock when the new occupant still fills the cell: at least {@value} tall. */
