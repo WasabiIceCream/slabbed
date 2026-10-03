@@ -8,7 +8,7 @@
     "BlockCollisionsLoweredAboveMixin",
     "BlockItemPlacementIntentMixin",
     "BlockOnPlacedAnchorMixin",
-    "BlockOnStateReplacedAnchorMixin",
+    "LevelChunkOccupantChangeAnchorMixin",
     "BrewingStandParticleMixin",
     "CampfireCookingParticleMixin",
     "CampfireParticleMixin",
@@ -40,7 +40,11 @@
     "WallRedstoneTorchParticleMixin",
     "WallSlabConnectionMixin",
     "WallTorchParticleMixin",
-    "torch.TorchBlockMixin"
+    "torch.TorchBlockMixin",
+    "BaseRailBlockSlopeShapeMixin",
+    "LoweredRailSupportNeighborMixin",
+    "PoweredRailVisualSignalMixin",
+    "RedstoneWireEvaluatorVisualStepMixin"
   ],
   "client": [],
   "injectors": {

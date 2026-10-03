@@ -315,8 +315,9 @@ public final class LandingResolver {
             // the support. Lowered chains keep the generic underside formula (for example -2.0 -> -1.5).
             landingDy = flushTopVerticalChainBridge
                     ? 0.0d
-                    : aim.ownerPos().getY() + aim.ownerVisibleDy() + bottomPlaneOffset(aim.ownerState())
-                            - (actualTarget.getY() + 1.0d);
+                    : clampToUndersideLimit(world, actualTarget, finalState,
+                            aim.ownerPos().getY() + aim.ownerVisibleDy() + bottomPlaneOffset(aim.ownerState())
+                                    - (actualTarget.getY() + 1.0d));
         } else {
             landingDy = clampToRealSeat(world, actualTarget, finalState,
                     aim.ownerVisibleDy() + aim.ownerPos().getY() - actualTarget.getY());
@@ -371,6 +372,42 @@ public final class LandingResolver {
             clamped = Math.min(clamped + 0.5d, 0.0d);
         }
         return clamped;
+    }
+
+    /** Placement-time underside fit: step toward grid height without changing any existing seat (LAW.md). */
+    private static double clampToUndersideLimit(
+            BlockGetter world, BlockPos target, BlockState finalState, double aimDy) {
+        if (world == null || !Double.isFinite(aimDy) || Math.abs(aimDy) <= 1.0e-6d) {
+            return aimDy;
+        }
+        double clamped = aimDy;
+        while (Math.abs(clamped) > 1.0e-6d
+                && undersideLandingIncreasesOverlap(world, target, finalState, clamped)) {
+            // Step toward 0.0 and never overshoot: at grid height the candidate sits at the vanilla
+            // baseline, so the overlap predicate is false by construction and the loop terminates.
+            clamped = aimDy > 0.0d
+                    ? Math.max(clamped - 0.5d, 0.0d)
+                    : Math.min(clamped + 0.5d, 0.0d);
+        }
+        return clamped;
+    }
+
+    private static boolean undersideLandingIncreasesOverlap(
+            BlockGetter world, BlockPos target, BlockState finalState, double dy) {
+        BlockPos abovePos = target.above();
+        BlockState aboveState = world.getBlockState(abovePos);
+        if (!aboveState.isAir()
+                && SlabEnsembleCoherence.relativeTranslationIncreasesBodyOverlap(
+                        finalState, target, dy,
+                        aboveState, abovePos, visibleOwnerDy(world, abovePos, aboveState))) {
+            return true;
+        }
+        BlockPos belowPos = target.below();
+        BlockState belowState = world.getBlockState(belowPos);
+        return !belowState.isAir()
+                && SlabEnsembleCoherence.relativeTranslationIncreasesBodyOverlap(
+                        belowState, belowPos, visibleOwnerDy(world, belowPos, belowState),
+                        finalState, target, dy);
     }
 
     /**
