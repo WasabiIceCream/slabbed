@@ -2,7 +2,9 @@
 
 Upstream: `github.com/peetsamods/slabbed` (repo licence GPL-3.0; the jars' `fabric.mod.json`
 says MIT). `origin` fetches upstream; its push URL is deliberately invalid. Branch
-`backport-26.1.2`, based on upstream's `port/mc-26.2-0.6.0` (b340c9c1, 2026-09-21).
+`backport-26.1.2`, based on upstream's `port/mc-26.2-0.6.0` (b340c9c1, 2026-09-21); upstream's 0.6.1-alpha
+(`4612140d`, 2026-10-01: rail and redstone contact on lowered slopes, fence underside/ceiling fixes, slab seats
+kept through material conversions and chunk writes, decoration seats deferred until chunks load) merged 2026-10-03.
 
 ## Why
 
@@ -32,9 +34,11 @@ height and show at grid height afterwards (nothing is moved or lost).
 
 `tools/check_injections.py` and `tools/check_shadows.py` (adapted from `brbe-ava-fabric`)
 check every mixin target against the 26.1.2 jar. Run from the repo root after compiling.
-Current result: shadows clean; 6 injection flags, all false alarms: calls to a method of the
-same class, which javap prints without the owner (`Method place:(...)`, `"<init>"`), verified
-by hand in the bytecode.
+Current result (0.6.1): shadows clean; 12 injection flags, all false alarms, verified by hand in the
+bytecode: calls to a method of the same class, which javap prints without the owner (`Method place:(...)`,
+`"<init>"`, `RedstoneWireEvaluator.getWireSignal`, whose `ordinal = 2` is the `below()` read in 26.1.2 too),
+and `PoweredRailVisualSignalMixin`'s two-method `method = {...}` array, which the script can't parse (both
+`updateState` and `isSameRailWithPower` call `Level.hasNeighborSignal` in 26.1.2).
 
 Tested 2026-09-26 on the local server and the Working instance: the broken structure renders
 correctly; blocks, torches, fences, chests and a hanging lantern lower on slabs; no seams from
@@ -42,7 +46,7 @@ any angle; re-placing a lowered block shows it at once; boot log has no new erro
 
 ## Build
 
-    ./gradlew jar    # build/libs/slabbed-0.6.0+26.1.2-gameoverse.1.jar
+    ./gradlew jar    # build/libs/slabbed-0.6.1-alpha+26.1.2-gameoverse.1.jar
 
 Copy to `fabric 26.1/mods/` (both sides; clients get it through AutoModpack). The replaced
 0.4.2-beta.2 jar is in `.backups/`.
