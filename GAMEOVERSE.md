@@ -55,3 +55,8 @@ Copy to `fabric 26.1/mods/` (both sides; clients get it through AutoModpack). Th
 
 Fetch `origin`. Drop this fork once upstream publishes a 26.1.2 build of 0.5+. Otherwise
 merge newer `port/mc-26.2-*` work, redo the renames above, and rerun both checks.
+
+## Retired (2026-10-05)
+
+Upstream published `0.6.2-alpha+26.1.2` on Modrinth: 0.6.1's behaviour on 26.1.2, plus a client-side bed fix, and
+the same saved-height identifiers as this build. The stock jar replaced ours; this branch stays as history.
